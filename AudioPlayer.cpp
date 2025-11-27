@@ -1,6 +1,4 @@
-﻿// ⚠️ تأكد أن هذا الملف لا يحتوي على أي تعريف لـ struct Playlist أو struct SurahNode.
-
-#include "AudioPlayer.h"
+﻿#include "AudioPlayer.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QStyle> 
@@ -13,10 +11,8 @@
 #include <QIcon>
 #include <QMap>
 
-// المسار الأساسي
 const QString BASE_PATH = "D:/QuranAudio/";
 
-// --- 1. دالة الـ Callback ---
 void AudioPlayer::data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount)
 {
     ma_decoder* pDecoder = (ma_decoder*)pDevice->pUserData;
@@ -25,7 +21,6 @@ void AudioPlayer::data_callback(ma_device* pDevice, void* pOutput, const void* p
     (void)pInput;
 }
 
-// --- 2. الكونستركتور والمدمر (مع AudioPlayer::) ---
 AudioPlayer::AudioPlayer(QWidget* parent) : QWidget(parent)
 {
     currentSurah = nullptr;
@@ -35,10 +30,8 @@ AudioPlayer::AudioPlayer(QWidget* parent) : QWidget(parent)
     timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, &AudioPlayer::updateProgress);
 
-    // 1. إنشاء الواجهة أولاً لضمان وجود QComboBox
     setupUi();
 
-    // 2. ثم يتم ملء القوائم (الآن يمكنها استخدام QComboBox بأمان)
     setupDefaultPlaylists();
 
     updateUiState();
@@ -56,22 +49,14 @@ AudioPlayer::~AudioPlayer()
     }
 }
 
-// --- 3. تجهيز القوائم الافتراضية ---
-// --- 3. تجهيز القوائم الافتراضية (تم حذف المحتوى) ---
+
 void AudioPlayer::setupDefaultPlaylists()
 {
-    // عند تشغيل البرنامج لأول مرة، لن يتم إنشاء أي قائمة تشغيل
-    // يجب على المستخدم النقر على "إنشاء قائمة جديدة" للبدء.
-
-    // 🆕 يتم إنشاء قائمة "جديدة" فارغة كـ activePlaylist إذا لم تكن هناك قوائم.
-    // هذا يمنع أي انهيار ويسمح بالضغط على زر "إضافة سورة" بعد إنشاء أول قائمة.
+    
 
     if (allPlaylists.isEmpty())
     {
-        // ⚠️ يجب تهيئة الـ activePlaylist ليتمكن زر "إنشاء قائمة جديدة" من العمل
-        // ولكن لا يجب إضافة القائمة إلى ComboBox الآن.
 
-        // لا تفعل أي شيء هنا. سيعمل زر "إنشاء قائمة جديدة" ويهيئ أول قائمة.
     }
 }
 void AudioPlayer::addSurahToActiveList(QString name, QString filename, bool isAbsolutePath)
@@ -84,7 +69,6 @@ void AudioPlayer::addSurahToActiveList(QString name, QString filename, bool isAb
     newNode->next = nullptr;
     newNode->prev = nullptr;
 
-    // ⚠️ التصحيح: استخدام activePlaylist->head/tail
     if (activePlaylist->head == nullptr) {
         activePlaylist->head = newNode;
         activePlaylist->tail = newNode;
@@ -95,15 +79,12 @@ void AudioPlayer::addSurahToActiveList(QString name, QString filename, bool isAb
         activePlaylist->tail = newNode;
     }
 
-    // يتم تحديث الواجهة فقط إذا كانت القائمة هي القائمة المعروضة حالياً
     if (activePlaylist->name == playlistSelector->currentText()) {
         playlistWidget->addItem(QString::number(playlistWidget->count() + 1) + ". " + name);
     }
 }
-// --- دالة حذف القائمة بالكامل من الذاكرة ---
 void AudioPlayer::deleteList(Playlist& list)
 {
-    // ⚠️ التصحيح: يجب استخدام list.head وليس activePlaylist->head
     SurahNode* current = list.head;
     while (current != nullptr) {
         SurahNode* nextNode = current->next;
@@ -114,7 +95,6 @@ void AudioPlayer::deleteList(Playlist& list)
     list.tail = nullptr;
 }
 
-// --- 5. تصميم الواجهة (مع AudioPlayer::) ---
 void AudioPlayer::setupUi()
 {
     setWindowTitle("المصحف المرتل");
@@ -137,7 +117,6 @@ void AudioPlayer::setupUi()
     mainLayout->setSpacing(15);
     mainLayout->setContentsMargins(20, 20, 20, 20);
 
-    // 🆕 منطقة اختيار القائمة (مطلوبة لحل الأخطاء)
     QHBoxLayout* selectorLayout = new QHBoxLayout();
     playlistSelector = new QComboBox(this);
     createPlaylistBtn = new QPushButton("إنشاء قائمة جديدة", this);
@@ -148,11 +127,9 @@ void AudioPlayer::setupUi()
     selectorLayout->addWidget(createPlaylistBtn);
     mainLayout->addLayout(selectorLayout);
 
-    // ⚠️ الربط المصحح: استخدام int overload
     connect(playlistSelector, QOverload<int>::of(&QComboBox::currentIndexChanged),
         this, &AudioPlayer::playlistSelectionChanged);
     connect(createPlaylistBtn, &QPushButton::clicked, this, &AudioPlayer::createNewPlaylistClicked);
-    // ------------------------------------
 
     playlistWidget = new QListWidget(this);
     mainLayout->addWidget(playlistWidget);
@@ -184,12 +161,10 @@ void AudioPlayer::setupUi()
     volumeSlider->setFixedWidth(100);
     connect(volumeSlider, &QSlider::valueChanged, this, &AudioPlayer::setVolume);
 
-    // 🆕 إنشاء أزرار الإضافة والحذف
     addBtn = new QPushButton("➕ إضافة سورة", this);
     deleteBtn = new QPushButton("❌ حذف المحدد", this);
     connect(addBtn, &QPushButton::clicked, this, &AudioPlayer::addSurahClicked);
     connect(deleteBtn, &QPushButton::clicked, this, &AudioPlayer::deleteSurahClicked);
-    // ----------------------------
 
     prevBtn = new QPushButton(this);
     prevBtn->setIcon(style()->standardIcon(QStyle::SP_MediaSkipBackward));
@@ -224,7 +199,7 @@ void AudioPlayer::setupUi()
     connect(prevBtn, &QPushButton::clicked, this, &AudioPlayer::prevClicked);
 }
 
-// --- 6. وظائف إدارة القوائم (مع AudioPlayer::) ---
+
 
 void AudioPlayer::createNewPlaylistClicked()
 {
@@ -287,10 +262,10 @@ void AudioPlayer::addSurahClicked()
     if (filePath.isEmpty()) return;
 
     QFileInfo fileInfo(filePath);
-    // ⚠️ التعديل هنا: سنخزن اسم الملف فقط (مثل Surah-Baqara_Aldosary.mp3)
+   
     QString baseName = fileInfo.fileName();
 
-    // ⚠️ فحص تكرار مسار الملف لضمان عدم تكرار نفس الملف
+   
     SurahNode* current = activePlaylist->head;
     while (current != nullptr) {
         if (current->path == filePath) {
@@ -300,17 +275,16 @@ void AudioPlayer::addSurahClicked()
         current = current->next;
     }
 
-    // ⚠️ يتم تمرير اسم الملف فقط
+    
     addSurahToActiveList(baseName, filePath, true);
 
     QMessageBox::information(this, "نجاح", "تمت إضافة السورة بنجاح.");
 }
-// --- دالة الحذف من الـ Doubly Linked List (يجب أن تستخدم activePlaylist) ---
+
 bool AudioPlayer::deleteSurahFromActiveList(const QString& name)
 {
     if (!activePlaylist) return false;
 
-    // ⚠️ التصحيح: البحث يبدأ من activePlaylist->head
     SurahNode* current = activePlaylist->head;
 
     while (current != nullptr && current->name != name) {
@@ -319,17 +293,14 @@ bool AudioPlayer::deleteSurahFromActiveList(const QString& name)
 
     if (current == nullptr) return false;
 
-    // 1. تحديث مؤشر الرأس
     if (current == activePlaylist->head) {
         activePlaylist->head = current->next;
     }
 
-    // 2. تحديث مؤشر الذيل
     if (current == activePlaylist->tail) {
         activePlaylist->tail = current->prev;
     }
 
-    // 3. ربط العقدة السابقة بالتالية
     if (current->prev != nullptr) {
         current->prev->next = current->next;
     }
@@ -348,10 +319,8 @@ void AudioPlayer::deleteSurahClicked()
         return;
     }
 
-    // 1. تحديد موقع العنصر في الواجهة
     int indexToDelete = playlistWidget->row(item);
 
-    // 2. الوصول إلى العقدة المقابلة في القائمة المترابطة
     SurahNode* nodeToDelete = activePlaylist->head;
     for (int i = 0; i < indexToDelete; ++i) {
         if (nodeToDelete) {
@@ -368,25 +337,25 @@ void AudioPlayer::deleteSurahClicked()
         return;
     }
 
-    QString surahNameInList = nodeToDelete->name; // ⚠️ هذا هو الاسم المخزن (اسم الملف)
+    QString surahNameInList = nodeToDelete->name; 
 
-    // 3. إيقاف التشغيل إذا كانت هذه السورة تعمل
+    
     if (currentSurah && currentSurah->name == surahNameInList) {
         stopClicked();
         currentSurah = nullptr;
     }
 
-    // 4. محاولة الحذف باستخدام الاسم الصحيح
+    
     if (deleteSurahFromActiveList(surahNameInList)) {
         delete playlistWidget->takeItem(playlistWidget->row(item));
         QMessageBox::information(this, "نجاح", "تم حذف السورة بنجاح.");
 
-        // 5. تحديث الترقيم في الواجهة
+       
         for (int i = 0; i < playlistWidget->count(); ++i) {
             QListWidgetItem* currentItem = playlistWidget->item(i);
             QString oldText = currentItem->text();
 
-            // نحتاج فقط لتحديث الترقيم (1.، 2.، إلخ)
+            
             QString baseName = oldText.section('.', 1).trimmed();
 
             currentItem->setText(QString::number(i + 1) + ". " + baseName);
@@ -396,7 +365,7 @@ void AudioPlayer::deleteSurahClicked()
         QMessageBox::critical(this, "خطأ", "فشل الحذف من القائمة المترابطة (خطأ منطقي).");
     }
 }
-// --- 7. باقي الدوال (تم تصحيح النطاق) ---
+
 
 bool AudioPlayer::loadTrack(SurahNode* node) {
     if (node == nullptr) return false;
@@ -535,6 +504,3 @@ void AudioPlayer::updateUiState() {
     playBtn->setIcon(style()->standardIcon(isPlaying ? QStyle::SP_MediaPause : QStyle::SP_MediaPlay));
 }
 
-// ------------------------------------------------------------------------------------------------
-
-// ⚠️ تأكد أن لديك الملفات الثلاثة كاملة وأنك قمت بـ Rebuild Solution.
